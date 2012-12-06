@@ -88,6 +88,18 @@ class AWS(Publisher):
         'application/pdf',
         'image/svg+xml'
     )
+    LONG_EXPIRY_CONTENT_TYPES = (
+        'text/css',
+        'application/javascript',
+        'application/x-javascript',
+        'application/x-font-ttf',
+        'application/pdf',
+        'image/jpeg',
+        'image/png',        
+        'image/svg+xml'
+    )
+    LONG_EXPIRY_DAYS = 100
+    SHORT_EXPIRY_DAYS = 0.5
     
     upload_count = 0
     skip_count = 0
@@ -102,9 +114,8 @@ class AWS(Publisher):
       self.do_force = getattr(settings,"force",False)
       self.verbosity = getattr(settings,"verbose",False)
       
-      # Extra variables to avoid passing these around
       if self.verbosity == True:
-        print "Initialising upload to %s" % (self.AWS_BUCKET_NAME)
+        print (self.AWS_BUCKET_NAME)
 
       # Check for AWS keys in settings
       if not hasattr(self.settings, 'AWS_ACCESS_KEY_ID') or \
@@ -121,10 +132,10 @@ class AWS(Publisher):
     def publish(self):
         if not self.site.config.deploy_root_path.exists:
             raise Exception("Please generate the site first")
-        # Now call the syncing method to walk the directory and
-        # upload all files found.
         
         else:
+          # Now call the syncing method to walk the directory and
+          # upload all files found.        
           self.sync_s3()
 
           print
@@ -143,7 +154,7 @@ class AWS(Publisher):
         """Gzip a given string."""
         import cStringIO, gzip
         zbuf = cStringIO.StringIO()
-        zfile = gzip.GzipFile(mode='wb', compresslevel=6, fileobj=zbuf)
+        zfile = gzip.GzipFile(mode='wb', compresslevel=9, fileobj=zbuf)
         zfile.write(s)
         zfile.close()
         return zbuf.getvalue()
@@ -215,12 +226,16 @@ class AWS(Publisher):
                         print "\tgzipped: %dk to %dk" % \
                             (file_size/1024, len(filedata)/1024)
             if self.do_expires:
+                if content_type in self.LONG_EXPIRY_CONTENT_TYPES:
+                    expiration_date = self.LONG_EXPIRY_DAYS
+                else:
+                    expiration_date = self.SHORT_EXPIRY_DAYS
                 # HTTP/1.0
                 headers['Expires'] = '%s GMT' % (email.Utils.formatdate(
                     time.mktime((datetime.datetime.now() +
-                    datetime.timedelta(days=0.5)).timetuple())))
+                    datetime.timedelta(days=expiration_date)).timetuple())))
                 # HTTP/1.1
-                headers['Cache-Control'] = 'max-age %d' % (3600 * 24 * 0.5)
+                headers['Cache-Control'] = 'max-age %d' % (3600 * 24 * expiration_date)
                 if self.verbosity == True:
                     print "\texpires: %s" % (headers['Expires'])
                     print "\tcache-control: %s" % (headers['Cache-Control'])

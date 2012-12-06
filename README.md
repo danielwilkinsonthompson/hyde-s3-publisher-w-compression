@@ -8,7 +8,7 @@ In addition, the script will optionally:
 - set an 'Expires' header for each file for optimal caching
 - only upload modified files
 
-Just copy this file to your {$PYTHONPATH}/hyde/ext/publishers/ directory to use it 
+Just copy this file to your {$PYTHONPATH}.../site-packages/hyde/ext/publishers/ directory to use it 
 
 Note: This script requires the Python boto library and a valid entry in the site.yaml file of your Hyde site
   
